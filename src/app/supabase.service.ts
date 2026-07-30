@@ -56,8 +56,41 @@ export class SupabaseService {
     return this.supabase.from('foods').delete().eq('id', id);
   }
 
+  async deleteFoodVerified(id: string): Promise<boolean> {
+    const delRes = await this.supabase.from('foods').delete().eq('id', id);
+    if (delRes.error) return false;
+    const checkRes = await this.supabase.from('foods').select('id').eq('id', id).maybeSingle();
+    if (checkRes.error) return false;
+    return !checkRes.data;
+  }
+
+  async deleteFoodsByDateAndName(date: string, name: string) {
+    return this.supabase.from('foods').delete().eq('date', date).eq('name', name);
+  }
+
+  async deleteFoodsByDateAndNameVerified(date: string, name: string): Promise<boolean> {
+    const delRes = await this.supabase.from('foods').delete().eq('date', date).eq('name', name);
+    if (delRes.error) return false;
+    const checkRes = await this.supabase
+      .from('foods')
+      .select('id')
+      .eq('date', date)
+      .eq('name', name)
+      .limit(1);
+    if (checkRes.error) return false;
+    return (checkRes.data ?? []).length === 0;
+  }
+
   async deleteSession(id: string) {
     return this.supabase.from('sessions').delete().eq('id', id);
+  }
+
+  async deleteSessionVerified(id: string): Promise<boolean> {
+    const delRes = await this.supabase.from('sessions').delete().eq('id', id);
+    if (delRes.error) return false;
+    const checkRes = await this.supabase.from('sessions').select('id').eq('id', id).maybeSingle();
+    if (checkRes.error) return false;
+    return !checkRes.data;
   }
 
   async getGoals() {

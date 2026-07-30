@@ -16,7 +16,8 @@ export class FuelComponent {
   intakeCalories: number | null = null;
   intakeProtein: number | null = null;
   showIntakeModal = signal(false);
-  hoveredDay = signal<string | null>(null);
+  hoveredIntakeDay = signal<string | null>(null);
+  hoveredSessionDay = signal<string | null>(null);
   showTargetEditor = signal(false);
   showSessionModal = signal(false);
   selectedSessionDate = signal<string | null>(null);
@@ -78,6 +79,8 @@ export class FuelComponent {
 
   weekCalories = computed<number>(() => this.weekDayTotals().reduce((sum, day) => sum + day.calories, 0));
   weekProtein = computed<number>(() => this.weekDayTotals().reduce((sum, day) => sum + day.protein, 0));
+  weekCaloriesAverage = computed<number>(() => Math.round(this.weekCalories() / 7));
+  weekProteinAverage = computed<number>(() => Math.round(this.weekProtein() / 7));
 
   todayCalories = computed(() => this.data.foods().filter(f => f.date === this.today).reduce((sum, f) => sum + f.cal, 0));
   todayProtein = computed(() => this.data.foods().filter(f => f.date === this.today).reduce((sum, f) => sum + f.pro, 0));
@@ -120,8 +123,12 @@ export class FuelComponent {
   weekSessionCount = computed(() => this.sessionDayTotals().reduce((sum, day) => sum + day.count, 0));
   weekDaysWithSessions = computed(() => this.sessionDayTotals().filter(day => day.count > 0).length);
 
-  setHoveredDay(day: string | null) {
-    this.hoveredDay.set(day);
+  setHoveredIntakeDay(day: string | null) {
+    this.hoveredIntakeDay.set(day);
+  }
+
+  setHoveredSessionDay(day: string | null) {
+    this.hoveredSessionDay.set(day);
   }
 
   openSessionModal(date: string) {

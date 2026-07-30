@@ -81,6 +81,43 @@ export class DataService {
     return { id: row.id, name: row.name, cal: row.cal, pro: row.pro, date: row.date, ts: Date.now() };
   }
 
+  private async normalizeFoods(rows: RemoteFood[]) {
+    const foodsFromDb = rows.map(row => this.mapRemoteFood(row));
+    const dedupedFoods: Food[] = [];
+    const seenDailyTotals = new Set<string>();
+    for (const food of foodsFromDb) {
+      if (food.name === 'Daily total') {
+        const key = `${food.date}|${food.name}`;
+        if (seenDailyTotals.has(key)) {
+          if (food.id) {
+            void this.deleteFoodById(food.id);
+          }
+          continue;
+        }
+        seenDailyTotals.add(key);
+      }
+      dedupedFoods.push(food);
+    }
+    return dedupedFoods;
+  }
+
+  private async fetchRemoteFoods() {
+    const foodRes = await this.supabase.getFoods();
+    if (foodRes.error) {
+      console.warn('Supabase food load failed', foodRes.error);
+      return this.state().foods;
+    }
+    return this.normalizeFoods(foodRes.data ?? []);
+  }
+  private async fetchRemoteSessions() {
+    const sessRes = await this.supabase.getSessions();
+    if (sessRes.error) {
+      console.warn('Supabase session load failed', sessRes.error);
+      return this.state().sessions;
+    }
+    return (sessRes.data ?? []).map(row => this.mapRemoteSession(row));
+  }
+
   private async loadRemoteState() {
     try {
       const [exRes, sessRes, foodRes, goalsRes] = await Promise.all([
@@ -97,7 +134,8 @@ export class DataService {
 
       const program = this.mapRemoteExercises(exRes.data ?? []);
       const sessions = (sessRes.data ?? []).map(row => this.mapRemoteSession(row));
-      const foods = (foodRes.data ?? []).map(row => this.mapRemoteFood(row));
+      const foods = await this.normalizeFoods(foodRes.data ?? []);
+
       const goals = Array.isArray(goalsRes.data) && goalsRes.data.length
         ? { id: goalsRes.data[0].id, cal: goalsRes.data[0].cal, pro: goalsRes.data[0].pro }
         : this.state().goals;
@@ -132,6 +170,11 @@ export class DataService {
         const existing = s.sessions.find(x => x.ts === session.ts);
         if (existing) existing.id = res.data.id;
       });
+      const stillExists = this.state().sessions.some(x => x.ts === session.ts);
+      if (!stillExists) {
+        await this.supabase.deleteSession(res.data.id);
+        this.update(s => { s.sessions = s.sessions.filter(x => x.id !== res.data.id); });
+      }
     }
   }
 
@@ -147,17 +190,36 @@ export class DataService {
         const existing = s.foods.find(x => x.ts === food.ts);
         if (existing) existing.id = res.data.id;
       });
+      const stillExists = this.state().foods.some(x => x.ts === food.ts);
+      if (!stillExists) {
+        await this.supabase.deleteFood(res.data.id);
+        this.update(s => { s.foods = s.foods.filter(x => x.id !== res.data.id); });
+      }
     }
   }
 
-  private async deleteFoodFromRemote(food: Food) {
-    if (!food.id) return;
-    await this.supabase.deleteFood(food.id);
+  private async deleteFoodFromRemote(food: Food): Promise<boolean> {
+    let ok = true;
+    if (food.id) {
+      ok = (await this.supabase.deleteFoodVerified(food.id)) && ok;
+    }
+    if (food.name === 'Daily total') {
+      ok = (await this.deleteFoodsByDateAndName(food.date, food.name)) && ok;
+    }
+    return ok;
   }
 
-  private async deleteSessionFromRemote(session: Session) {
-    if (!session.id) return;
-    await this.supabase.deleteSession(session.id);
+  private async deleteFoodById(id: string) {
+    await this.supabase.deleteFood(id);
+  }
+
+  private async deleteFoodsByDateAndName(date: string, name: string): Promise<boolean> {
+    return this.supabase.deleteFoodsByDateAndNameVerified(date, name);
+  }
+
+  private async deleteSessionFromRemote(session: Session): Promise<boolean> {
+    if (!session.id) return false;
+    return this.supabase.deleteSessionVerified(session.id);
   }
 
   private async syncGoalsToRemote(goals: Goals) {
@@ -181,12 +243,17 @@ export class DataService {
     this.update(s => { s.sessions.unshift(session); });
     void this.syncSessionToRemote(session);
   }
-  deleteSession(ts: number) {
+  async deleteSession(ts: number) {
     const session = this.state().sessions.find(x => x.ts === ts);
-    if (session) {
-      void this.deleteSessionFromRemote(session);
-    }
     this.update(s => { s.sessions = s.sessions.filter(x => x.ts !== ts); });
+    if (session) {
+      const deleted = await this.deleteSessionFromRemote(session);
+      const sessions = await this.fetchRemoteSessions();
+      this.update(s => { s.sessions = sessions; });
+      if (!deleted) {
+        console.warn('Session delete was blocked by database policy or failed server-side', { id: session.id, date: session.date });
+      }
+    }
   }
 
   // ---- Fuel ----
@@ -209,6 +276,13 @@ export class DataService {
         targetEntry = { name: 'Daily total', cal, pro, date, ts: Date.now() };
         s.foods.unshift(targetEntry);
       }
+
+      s.foods = s.foods.filter(x => {
+        if (x.name !== 'Daily total' || x.date !== date) {
+          return true;
+        }
+        return x.ts === targetEntry!.ts;
+      });
     });
     if (targetEntry) {
       void this.syncFoodToRemote(targetEntry);
@@ -233,12 +307,24 @@ export class DataService {
     }
   }
 
-  deleteFood(ts: number) {
+  async deleteFood(ts: number) {
     const food = this.state().foods.find(x => x.ts === ts);
     if (food) {
-      void this.deleteFoodFromRemote(food);
+      const deleted = await this.deleteFoodFromRemote(food);
+      const foods = await this.fetchRemoteFoods();
+      this.update(s => { s.foods = foods; });
+      if (!deleted) {
+        console.warn('Food delete was blocked by database policy or failed server-side', { id: food.id, date: food.date, name: food.name });
+        return;
+      }
+      this.update(s => {
+        if (food.name === 'Daily total') {
+          s.foods = s.foods.filter(x => !(x.name === 'Daily total' && x.date === food.date));
+        } else {
+          s.foods = s.foods.filter(x => x.ts !== ts);
+        }
+      });
     }
-    this.update(s => { s.foods = s.foods.filter(x => x.ts !== ts); });
   }
   saveGoals(cal: number | null, pro: number | null) {
     this.update(s => {

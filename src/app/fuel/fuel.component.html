@@ -37,13 +37,13 @@
   </div>
   <div class="day-row calendar-row">
     <div *ngFor="let day of weekDayTotals()" class="day-card clickable" [class.today]="day.isToday" [class.filled]="day.calories > 0 || day.protein > 0"
-      (click)="openIntakeModal(day.date)" (mouseenter)="setHoveredDay(day.date)" (mouseleave)="setHoveredDay(null)">
+      (click)="openIntakeModal(day.date)" (mouseenter)="setHoveredIntakeDay(day.date)" (mouseleave)="setHoveredIntakeDay(null)">
       <div class="day-line" [class.empty]="day.calories === 0 && day.protein === 0">
         <div class="day-bar cal" [style.height.%]="day.calHeight" [class.too-high]="day.calTooHigh"></div>
         <div class="day-bar pro" [style.height.%]="day.proHeight" [class.too-high]="day.proTooHigh"></div>
       </div>
       <div class="day-label">{{ day.label }}</div>
-      <div class="day-detail" *ngIf="hoveredDay() === day.date">
+      <div class="day-detail" *ngIf="hoveredIntakeDay() === day.date">
         <span>{{ day.calories }} kcal</span>
         <span>{{ day.protein }} g protein</span>
         <span class="detail-tip">Click to edit</span>
@@ -51,8 +51,14 @@
     </div>
   </div>
   <div class="fuel-goals compact">
-    <div><span class="k">Total</span><span>{{ weekCalories() }} kcal</span></div>
-    <div><span class="k">Protein</span><span>{{ weekProtein() }} g</span></div>
+    <div>
+      <span class="k">Kcal</span>
+      <span class="summary-value"><small>AVG</small> {{ weekCaloriesAverage() }} kcal <small>TOTAL</small> {{ weekCalories() }} kcal</span>
+    </div>
+    <div>
+      <span class="k">Protein</span>
+      <span class="summary-value"><small>AVG</small> {{ weekProteinAverage() }} g <small>TOTAL</small> {{ weekProtein() }} g</span>
+    </div>
   </div>
 </div>
 
@@ -65,12 +71,12 @@
   </div>
   <div class="day-row">
     <div *ngFor="let day of sessionDayTotals()" class="day-card clickable" [class.today]="day.isToday" [class.filled]="day.count > 0" title="{{ day.count }} sessions"
-      (click)="openSessionModal(day.date)">
+      (click)="openSessionModal(day.date)" (mouseenter)="setHoveredSessionDay(day.date)" (mouseleave)="setHoveredSessionDay(null)">
       <div class="day-line" [class.empty]="day.count === 0">
         <div class="day-bar session" [style.height.%]="day.barHeight"></div>
       </div>
       <div class="day-label">{{ day.label }}</div>
-      <div class="day-detail" *ngIf="hoveredDay() === day.date">
+      <div class="day-detail" *ngIf="hoveredSessionDay() === day.date">
         <span>{{ day.count }} session{{ day.count === 1 ? '' : 's' }}</span>
         <span class="detail-tip">Click to delete</span>
       </div>
