@@ -1,0 +1,82 @@
+<div class="day-tabs">
+  <div
+    *ngFor="let key of dayKeys"
+    class="day-tab"
+    [class.active]="key === currentDay()"
+    (click)="switchDay(key)">
+    {{ data.program().gym[key].label }}
+    <span class="d">{{ data.program().gym[key].day }}</span>
+  </div>
+</div>
+
+<div *ngFor="let ex of currentExercises(); let i = index" class="ex-card overview-ex-card">
+  <div class="ex-left">
+    <div class="ex-name">{{ ex.name }}</div>
+    <div class="ex-target">{{ ex.target }}</div>
+  </div>
+  <div class="ex-right">
+    <div class="load-pill">{{ ex.load ? ex.load + ' kg' : 'BW' }}</div>
+    <label class="check-pill">
+      <input type="checkbox" [checked]="isComplete(i)" (change)="toggleComplete(i)">
+      <span>{{ isComplete(i) ? 'Done' : 'Done' }}</span>
+    </label>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Today's sets</h2>
+  <div class="plate-stack">
+    <div class="plate" *ngFor="let p of plates(); let i = index" [style.height.px]="14 + i * 2"></div>
+    <div class="empty" style="padding:0" *ngIf="plates().length === 0">—</div>
+  </div>
+  <div *ngIf="data.todaysSets().length === 0" class="empty">No sets logged today — add your first above</div>
+  <div *ngFor="let s of data.todaysSets()" class="set-row">
+    <div>
+      <div class="set-ex">{{ s.name }}</div>
+      <div class="set-meta">{{ s.sets }}×{{ s.reps }}{{ s.weight ? ' @ ' + s.weight + 'lb' : ' (BW)' }}</div>
+    </div>
+    <button class="set-del" (click)="deleteSet(s.ts)">✕</button>
+  </div>
+</div>
+
+<div class="section-divider"><span>Gym time</span></div>
+
+<div class="stat-row">
+  <div class="stat">
+    <div class="num">{{ weekSessionCount() }}</div>
+    <div class="lbl">Sessions / wk</div>
+  </div>
+  <div class="stat">
+    <div class="num">{{ weekMinutes() }}</div>
+    <div class="lbl">Minutes / wk</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>This week</h2>
+  <div class="week-bars">
+    <div class="wbar-col" *ngFor="let b of weekBars()">
+      <div class="wbar" [class.hasval]="b.mins > 0" [style.height.%]="b.heightPct"></div>
+      <div class="wbar-day">{{ b.label }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Log gym time</h2>
+  <div class="form-row">
+    <input type="date" [(ngModel)]="sessionDate">
+    <input type="number" placeholder="Minutes" [(ngModel)]="sessionMins">
+  </div>
+  <button class="add steel" (click)="addSession()">Log session</button>
+</div>
+
+<div class="card">
+  <h2>Recent sessions</h2>
+  <div *ngIf="recentSessions().length === 0" class="empty">No sessions logged yet</div>
+  <div *ngFor="let s of recentSessions()" class="session-row">
+    <div>{{ s.date }}</div>
+    <div class="set-meta">{{ s.mins }} min</div>
+    <button class="set-del" (click)="deleteSession(s.ts)">✕</button>
+  </div>
+</div>

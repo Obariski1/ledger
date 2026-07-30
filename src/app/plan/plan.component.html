@@ -1,0 +1,41 @@
+<div class="loc-toggle">
+  <button
+    *ngFor="let loc of locations()"
+    class="loc-btn"
+    [class.active]="loc === currentLocation()"
+    (click)="switchLocation(loc)">
+    {{ data.program()[loc].label }}
+  </button>
+</div>
+
+<div class="day-tabs">
+  <div
+    *ngFor="let key of dayKeys"
+    class="day-tab"
+    [class.active]="key === currentDay()"
+    (click)="switchDay(key)">
+    {{ data.program()[currentLocation()][key].label }}
+    <span class="d">{{ data.program()[currentLocation()][key].day }}</span>
+  </div>
+</div>
+
+<div *ngFor="let ex of currentExercises(); let i = index" class="ex-card overview-ex-card" [class.completed]="isComplete(i)" (click)="toggleComplete(i)">
+  <div class="ex-left">
+    <div class="ex-name">{{ ex.name }}</div>
+    <div class="ex-target">{{ ex.target }}</div>
+  </div>
+  <div class="ex-right">
+    <div class="load-input-wrap" (click)="$event.stopPropagation()">
+      <input
+        type="number"
+        min="0"
+        step="2.5"
+        class="load-input"
+        [value]="ex.load"
+        (input)="updateLoad(i, $any($event.target).value)"
+      />
+      <span class="load-label">kg</span>
+    </div>
+    <div class="status-pill" *ngIf="isComplete(i)">Done</div>
+  </div>
+</div>

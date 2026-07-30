@@ -1,0 +1,25 @@
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>823410 : Maël Cabon</h1>
+      <div class="date-today">{{ today }}</div>
+    </div>
+    <div class="tabs">
+      <button class="tab accent-fuel" [class.active]="activeTab() === 'overview'" (click)="switchTab('overview')">
+        Overview<span class="n">weekly stats</span><span class="bar"></span>
+      </button>
+      <button class="tab accent-plan" [class.active]="activeTab() === 'plan'" (click)="switchTab('plan')">
+        Plan<span class="n">exercises</span><span class="bar"></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <app-plan *ngIf="activeTab() === 'plan'"></app-plan>
+    <div *ngIf="activeTab() === 'overview'">
+      <app-fuel></app-fuel>
+    </div>
+  </main>
+
+  <footer>data stored locally in your browser · resets never</footer>
+</div>

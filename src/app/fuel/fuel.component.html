@@ -1,0 +1,126 @@
+<div class="card weekly-overview-card week-day-card-row">
+  <div class="card-header">
+    <div>
+      <h2>Calories this week</h2>
+      <div class="week-label">{{ weekRange() }}</div>
+    </div>
+    <div class="header-actions">
+      <button class="add olive sm" (click)="openIntakeModal()">Log intake</button>
+      <button class="add steel sm" (click)="toggleTargetEditor()">Change target</button>
+    </div>
+  </div>
+  <div *ngIf="showTargetEditor()" class="goal-card">
+    <div class="goal-row">
+      <div class="goal-group">
+        <label>Calories</label>
+        <div class="goal-inputs">
+          <input type="number" [(ngModel)]="goalCalMin" />
+          <span>–</span>
+          <input type="number" [(ngModel)]="goalCalMax" />
+        </div>
+        <div class="goal-unit">kcal</div>
+      </div>
+      <div class="goal-group">
+        <label>Protein</label>
+        <div class="goal-inputs">
+          <input type="number" [(ngModel)]="goalProMin" />
+          <span>–</span>
+          <input type="number" [(ngModel)]="goalProMax" />
+        </div>
+        <div class="goal-unit">g</div>
+      </div>
+    </div>
+    <div class="goal-status">
+      <div class="status-pill" [class.alert]="caloriesStatus() !== 'Calories in range'">{{ caloriesStatus() }}</div>
+      <div class="status-pill" [class.alert]="proteinStatus() !== 'Protein in range'">{{ proteinStatus() }}</div>
+    </div>
+  </div>
+  <div class="day-row calendar-row">
+    <div *ngFor="let day of weekDayTotals()" class="day-card clickable" [class.today]="day.isToday" [class.filled]="day.calories > 0 || day.protein > 0"
+      (click)="openIntakeModal(day.date)" (mouseenter)="setHoveredDay(day.date)" (mouseleave)="setHoveredDay(null)">
+      <div class="day-line" [class.empty]="day.calories === 0 && day.protein === 0">
+        <div class="day-bar cal" [style.height.%]="day.calHeight" [class.too-high]="day.calTooHigh"></div>
+        <div class="day-bar pro" [style.height.%]="day.proHeight" [class.too-high]="day.proTooHigh"></div>
+      </div>
+      <div class="day-label">{{ day.label }}</div>
+      <div class="day-detail" *ngIf="hoveredDay() === day.date">
+        <span>{{ day.calories }} kcal</span>
+        <span>{{ day.protein }} g protein</span>
+        <span class="detail-tip">Click to edit</span>
+      </div>
+    </div>
+  </div>
+  <div class="fuel-goals compact">
+    <div><span class="k">Total</span><span>{{ weekCalories() }} kcal</span></div>
+    <div><span class="k">Protein</span><span>{{ weekProtein() }} g</span></div>
+  </div>
+</div>
+
+<div class="card weekly-overview-card week-day-card-row">
+  <div class="card-header">
+    <div>
+      <h2>Gym sessions this week</h2>
+      <div class="week-label">{{ weekRange() }}</div>
+    </div>
+  </div>
+  <div class="day-row">
+    <div *ngFor="let day of sessionDayTotals()" class="day-card clickable" [class.today]="day.isToday" [class.filled]="day.count > 0" title="{{ day.count }} sessions"
+      (click)="openSessionModal(day.date)">
+      <div class="day-line" [class.empty]="day.count === 0">
+        <div class="day-bar session" [style.height.%]="day.barHeight"></div>
+      </div>
+      <div class="day-label">{{ day.label }}</div>
+      <div class="day-detail" *ngIf="hoveredDay() === day.date">
+        <span>{{ day.count }} session{{ day.count === 1 ? '' : 's' }}</span>
+        <span class="detail-tip">Click to delete</span>
+      </div>
+    </div>
+  </div>
+  <div class="fuel-goals compact">
+    <div><span class="k">Total</span><span>{{ weekSessionCount() }}</span></div>
+    <div><span class="k">Active days</span><span>{{ weekDaysWithSessions() }}</span></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showSessionModal()" (click)="closeSessionModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Manage gym session</h3>
+      <button class="modal-close" (click)="closeSessionModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <div>{{ selectedSessionDate() }}</div>
+    </div>
+    <div *ngIf="sessionEntries().length; else noSessions">
+      <div *ngFor="let s of sessionEntries()" class="session-row">
+        <div>{{ s.mins }} min</div>
+        <button class="set-del" (click)="deleteSession(s.ts)">Delete</button>
+      </div>
+    </div>
+    <ng-template #noSessions>
+      <div class="empty">No gym sessions on this day.</div>
+    </ng-template>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showIntakeModal()" (click)="closeIntakeModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ selectedFood() ? 'Edit intake' : 'Log intake' }}</h3>
+      <button class="modal-close" (click)="closeIntakeModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <input type="date" [(ngModel)]="editDate">
+    </div>
+    <div class="form-row">
+      <input type="number" placeholder="Calories" [(ngModel)]="editCalories">
+    </div>
+    <div class="form-row">
+      <input type="number" placeholder="Protein" [(ngModel)]="editProtein">
+    </div>
+    <div class="modal-actions">
+      <button class="add olive" (click)="saveFoodEntry()">{{ selectedFood() ? 'Save changes' : 'Save intake' }}</button>
+      <button *ngIf="selectedFood()" class="delete" (click)="deleteSelectedEntry()">Delete</button>
+    </div>
+  </div>
+</div>
