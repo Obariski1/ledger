@@ -162,6 +162,41 @@ export class DataService {
     } as any);
   }
 
+  private async addExerciseToRemote(location: LocationKey, day: DayKey, idx: number) {
+    const ex = this.state().program[location][day].exercises[idx];
+    if (!ex || ex.id) return;
+
+    const res = await this.supabase.addProgramExercise({
+      location,
+      day,
+      name: ex.name,
+      target: ex.target,
+      note: ex.note || null,
+      load: ex.load,
+      completed_at: ex.completedAt ?? null,
+      sort_order: idx
+    });
+
+    if (!res.error && res.data) {
+      this.update(s => {
+        const created = s.program[location][day].exercises[idx];
+        if (created && !created.id) {
+          created.id = res.data.id;
+        }
+      });
+      return;
+    }
+
+    console.warn('Remote exercise create failed', res.error);
+  }
+
+  private async deleteExerciseFromRemote(id: string) {
+    const res = await this.supabase.deleteProgramExercise(id);
+    if (res.error) {
+      console.warn('Remote exercise delete failed', res.error);
+    }
+  }
+
   private async syncSessionToRemote(session: Session) {
     if (session.id) return;
     const res = await this.supabase.addSession(session.date, session.mins);
@@ -335,6 +370,40 @@ export class DataService {
   }
 
   // ---- Plan ----
+  addExercise(loc: LocationKey, day: DayKey, name: string, target: string, load = 0, note = '') {
+    const cleanName = name.trim();
+    const cleanTarget = target.trim();
+    if (!cleanName || !cleanTarget) return;
+
+    let idx = 0;
+    this.update(s => {
+      const list = s.program[loc][day].exercises;
+      idx = list.length;
+      list.push({
+        name: cleanName,
+        target: cleanTarget,
+        note: note.trim(),
+        load: Math.max(0, Math.round(load * 10) / 10),
+        completedAt: null
+      });
+    });
+
+    void this.addExerciseToRemote(loc, day, idx);
+  }
+
+  deleteExercise(loc: LocationKey, day: DayKey, idx: number) {
+    const exercise = this.state().program[loc][day].exercises[idx];
+    if (!exercise) return;
+
+    this.update(s => {
+      s.program[loc][day].exercises.splice(idx, 1);
+    });
+
+    if (exercise.id) {
+      void this.deleteExerciseFromRemote(exercise.id);
+    }
+  }
+
   adjustLoad(loc: LocationKey, day: DayKey, idx: number, delta: number) {
     this.update(s => {
       const ex = s.program[loc][day].exercises[idx];

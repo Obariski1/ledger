@@ -39,3 +39,58 @@
     <div class="status-pill" *ngIf="isComplete(i)">Done</div>
   </div>
 </div>
+
+<div class="button-row plan-add-wrap">
+  <button class="add amber sm" (click)="toggleAddExercise()">
+    {{ showAddExercise() ? 'Cancel' : 'Add exercise' }}
+  </button>
+  <button class="add sm" (click)="toggleDeleteExercise()">
+    {{ showDeleteExercise() ? 'Cancel' : 'Delete exercise' }}
+  </button>
+</div>
+
+<div class="card" *ngIf="showAddExercise()">
+  <div class="form-row">
+    <input
+      type="text"
+      placeholder="Exercise name"
+      [(ngModel)]="newExerciseName"
+    />
+  </div>
+  <div class="form-row">
+    <input
+      type="text"
+      placeholder="Target (example: 3x10-12)"
+      [(ngModel)]="newExerciseTarget"
+    />
+  </div>
+  <div class="form-row">
+    <input
+      type="number"
+      min="0"
+      step="2.5"
+      placeholder="Starting load (kg)"
+      [(ngModel)]="newExerciseLoad"
+    />
+  </div>
+  <div class="form-row">
+    <input
+      type="text"
+      placeholder="Note (optional)"
+      [(ngModel)]="newExerciseNote"
+    />
+  </div>
+  <button class="add amber" (click)="createExercise()">Create exercise</button>
+</div>
+
+<div class="card" *ngIf="showDeleteExercise()">
+  <div class="form-row">
+    <select [(ngModel)]="selectedDeleteExerciseIndex">
+      <option [ngValue]="null">Select exercise to delete</option>
+      <option *ngFor="let ex of currentExercises(); let i = index" [ngValue]="i">
+        {{ ex.name }} - {{ ex.target }}
+      </option>
+    </select>
+  </div>
+  <button class="add" (click)="deleteSelectedExercise()" [disabled]="selectedDeleteExerciseIndex === null">Delete selected</button>
+</div>

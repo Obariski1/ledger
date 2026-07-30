@@ -32,6 +32,14 @@ export class SupabaseService {
     return this.supabase.from('program_exercises').upsert(exercise);
   }
 
+  async addProgramExercise(exercise: Omit<SupabaseExercise, 'id'>) {
+    return this.supabase.from('program_exercises').insert(exercise).select('*').single();
+  }
+
+  async deleteProgramExercise(id: string) {
+    return this.supabase.from('program_exercises').delete().eq('id', id);
+  }
+
   async getSessions() {
     return this.supabase.from('sessions').select('*').order('created_at', { ascending: false });
   }

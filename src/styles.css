@@ -94,6 +94,7 @@ button.add.sm{width:auto; padding:8px 14px; font-size:12px;}
 .load-input{width:70px; border:none; background:transparent; color:var(--text); font-family:'Space Mono',monospace; font-size:14px; text-align:right;}
 .load-input:focus{outline:none;}
 .load-label{font-size:12px; color:var(--muted);}
+.plan-add-wrap{margin-top:10px; margin-bottom:12px;}
 .status-pill{font-size:12px; font-weight:600; text-transform:uppercase; color:var(--olive);}
 .overview-ex-card.completed .status-pill{color:rgba(255,255,255,.55);}
 
@@ -115,6 +116,7 @@ button.add{
 }
 button.add.steel{background:var(--steel);}
 button.add.olive{background:var(--olive); color:#15181A;}
+button.add.amber{background:var(--amber); color:#15181A;}
 
 .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; padding:20px; z-index:20;}
 .modal-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; width:100%; max-width:420px; padding:22px; box-shadow:0 18px 38px rgba(0,0,0,.35);}
